@@ -26,7 +26,8 @@ downloads or exfiltrates anything.
 | Check | What it reports |
 |---|---|
 | **Token privileges** (`PRIV`) | Dangerous privileges held by the current token — `SeImpersonate`, `SeDebug`, `SeBackup`, `SeRestore`, `SeTakeOwnership`, `SeLoadDriver`, `SeTcb`, … — with the risk each one carries. A privilege the token *holds* is reported even when currently disabled. |
-| **Services** (`SVC`) | Unquoted service paths with a writable segment, writable service binaries, and writable service directories (DLL side-loading / binary replacement). |
+| **Services** (`SVC`) | Writable service registry keys (rewrite `ImagePath`), unquoted service paths with a writable segment, writable service binaries, and writable service directories (DLL side-loading / binary replacement). |
+| **Scheduled tasks** (`TASK`) | Tasks whose action binary — or its directory — is writable by the current user, read straight from the on-disk task XML. |
 | **AlwaysInstallElevated** (`AIE`) | The installer policy that applies MSI packages with elevated rights for standard users. |
 | **Autoruns** (`RUN`) | `Run` / `RunOnce` entries whose target binary or directory is writable by the current user. |
 | **PATH** (`PATH`) | User-writable directories on the system `PATH` — a name-based resolution exposure. |
@@ -73,7 +74,7 @@ mycroft [OPTIONS]
 OPTIONS:
     --json            Emit findings as JSON (for pipelines / triage)
     --no-color        Disable ANSI colours
-    --only <check>    Run one check: privileges, services, installer,
+    --only <check>    Run one check: privileges, services, tasks, installer,
                       autoruns, path, uac, credentials
     -h, --help
     -V, --version
@@ -93,9 +94,8 @@ mycroft --only services  # just the service checks
 - **No external data file, no network** — findings come from live host state, so there is
   nothing to keep up to date.
 - Adding a check is one file in `src/checks/` plus one line in `src/main.rs`.
-- Natural next modules: writable scheduled-task binaries, writable service *registry* keys
-  (`SE_REGISTRY_KEY` `AccessCheck`), DLL-search-order gaps, and an optional WES-NG-style
-  offline KB-diff module if missing-patch coverage is also wanted.
+- Natural next modules: DLL-search-order gaps in application directories, and an optional
+  WES-NG-style offline KB-diff module if missing-patch coverage is also wanted.
 
 The animated demo above is regenerated with `python3 tools/gen_demo.py`.
 

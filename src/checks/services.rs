@@ -5,8 +5,8 @@
 
 use crate::report::{Reporter, Severity};
 use crate::util::{
-    can_write, parent_dir, parse_exe, reg_get_string, reg_get_u32, reg_subkeys, unquoted_candidates,
-    Hive,
+    can_write, can_write_regkey, parent_dir, parse_exe, reg_get_string, reg_get_u32, reg_subkeys,
+    unquoted_candidates, Hive,
 };
 
 const SERVICES: &str = r"SYSTEM\CurrentControlSet\Services";
@@ -19,6 +19,19 @@ pub fn run(rep: &mut Reporter) {
         let svc_type = reg_get_u32(Hive::Hklm, &base, "Type").unwrap_or(0);
         if svc_type & 0x30 == 0 {
             continue;
+        }
+
+        // 0. Writable service registry key — lets the user rewrite ImagePath.
+        if can_write_regkey(&format!(r"MACHINE\{base}")) {
+            rep.push(
+                "SVC-004",
+                "services",
+                &format!("Writable service registry key — '{svc}'"),
+                Severity::High,
+                "The current user can modify the service's registry configuration, including its ImagePath.",
+                vec![format!(r"HKLM\{base}")],
+                "Restrict write access on the service key to administrators / SYSTEM.",
+            );
         }
 
         let Some(raw) = reg_get_string(Hive::Hklm, &base, "ImagePath") else {

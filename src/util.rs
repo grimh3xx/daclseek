@@ -29,7 +29,10 @@ const FILE_GENERIC_EXECUTE: u32 = 0x0012_00A0;
 const FILE_ALL_ACCESS: u32 = 0x001F_01FF;
 
 const KEY_READ: u32 = 0x2_0019;
+const KEY_WRITE: u32 = 0x2_0006;
+const KEY_ALL_ACCESS: u32 = 0xF_003F;
 const SE_FILE_OBJECT: i32 = 1;
+const SE_REGISTRY_KEY: i32 = 4;
 const SECURITY_IMPERSONATION: i32 = 2;
 const TOKEN_QUERY: u32 = 0x0008;
 const TOKEN_DUPLICATE: u32 = 0x0002;
@@ -282,19 +285,19 @@ pub fn file_exists(path: &str) -> bool {
 }
 
 /// Does the CURRENT process token have effective write/modify/delete/take-owner
-/// access to `path`? Uses a real `AccessCheck` against the DACL, so group
-/// membership, inheritance and deny-ACEs are all honoured — not a guess.
-pub fn can_write(path: &str) -> bool {
-    if path.is_empty() {
+/// access to the named object? Uses a real `AccessCheck` against the DACL, so
+/// group membership, inheritance and deny-ACEs are all honoured — not a guess.
+fn effective_access(name: &str, obj_type: i32, mapping: GENERIC_MAPPING, mut desired: u32) -> bool {
+    if name.is_empty() {
         return false;
     }
-    let wpath = to_wide(path);
+    let wname = to_wide(name);
     unsafe {
         let mut psd: *mut c_void = null_mut();
         let mut pdacl: *mut windows_sys::Win32::Security::ACL = null_mut();
         let rc = GetNamedSecurityInfoW(
-            wpath.as_ptr(),
-            SE_FILE_OBJECT,
+            wname.as_ptr(),
+            obj_type,
             0x0000_0001 | 0x0000_0002 | 0x0000_0004, // OWNER | GROUP | DACL
             null_mut(),
             null_mut(),
@@ -323,13 +326,6 @@ pub fn can_write(path: &str) -> bool {
             return false;
         }
 
-        let mapping = GENERIC_MAPPING {
-            GenericRead: FILE_GENERIC_READ,
-            GenericWrite: FILE_GENERIC_WRITE,
-            GenericExecute: FILE_GENERIC_EXECUTE,
-            GenericAll: FILE_ALL_ACCESS,
-        };
-        let mut desired = FILE_GENERIC_WRITE | DELETE | WRITE_DAC | WRITE_OWNER;
         MapGenericMask(&mut desired, &mapping);
 
         let mut privset: PRIVILEGE_SET = std::mem::zeroed();
@@ -352,6 +348,31 @@ pub fn can_write(path: &str) -> bool {
         LocalFree(psd);
         ok != 0 && status != 0
     }
+}
+
+/// Can the current token write/replace/delete the file at `path`?
+pub fn can_write(path: &str) -> bool {
+    let mapping = GENERIC_MAPPING {
+        GenericRead: FILE_GENERIC_READ,
+        GenericWrite: FILE_GENERIC_WRITE,
+        GenericExecute: FILE_GENERIC_EXECUTE,
+        GenericAll: FILE_ALL_ACCESS,
+    };
+    let desired = FILE_GENERIC_WRITE | DELETE | WRITE_DAC | WRITE_OWNER;
+    effective_access(path, SE_FILE_OBJECT, mapping, desired)
+}
+
+/// Can the current token modify the registry key? `name` uses the
+/// `GetNamedSecurityInfoW` form, e.g. `MACHINE\SYSTEM\CurrentControlSet\...`.
+pub fn can_write_regkey(name: &str) -> bool {
+    let mapping = GENERIC_MAPPING {
+        GenericRead: KEY_READ,
+        GenericWrite: KEY_WRITE,
+        GenericExecute: KEY_READ,
+        GenericAll: KEY_ALL_ACCESS,
+    };
+    let desired = KEY_WRITE | DELETE | WRITE_DAC | WRITE_OWNER;
+    effective_access(name, SE_REGISTRY_KEY, mapping, desired)
 }
 
 /// The current process token privileges, as `(name, enabled)`.

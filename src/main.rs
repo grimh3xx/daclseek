@@ -17,6 +17,7 @@ use report::Reporter;
 const CHECKS: &[&str] = &[
     "privileges",
     "services",
+    "tasks",
     "installer",
     "autoruns",
     "path",
@@ -95,6 +96,9 @@ fn main() {
     }
     if enabled("services") {
         checks::services::run(&mut rep);
+    }
+    if enabled("tasks") {
+        checks::scheduled_tasks::run(&mut rep);
     }
     if enabled("installer") {
         checks::always_install_elevated::run(&mut rep);
