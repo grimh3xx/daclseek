@@ -5,8 +5,8 @@
 
 use crate::report::{Reporter, Severity};
 use crate::util::{
-    can_write, can_write_regkey, parent_dir, parse_exe, reg_get_string, reg_get_u32, reg_subkeys,
-    unquoted_candidates, Hive,
+    can_change_service_config, can_write, can_write_regkey, parent_dir, parse_exe, reg_get_string,
+    reg_get_u32, reg_subkeys, unquoted_candidates, Hive,
 };
 
 const SERVICES: &str = r"SYSTEM\CurrentControlSet\Services";
@@ -21,8 +21,20 @@ pub fn run(rep: &mut Reporter) {
             continue;
         }
 
-        // 0. Writable service registry key — lets the user rewrite ImagePath.
-        if can_write_regkey(&format!(r"MACHINE\{base}")) {
+        // 0. Can the user reconfigure the service? The SCM-level
+        // SERVICE_CHANGE_CONFIG check is precise; fall back to the registry-key
+        // DACL only when SCM doesn't already flag it (avoids double-reporting).
+        if can_change_service_config(&svc) {
+            rep.push(
+                "SVC-005",
+                "services",
+                &format!("Reconfigurable service — '{svc}'"),
+                Severity::High,
+                "The current user holds SERVICE_CHANGE_CONFIG — they can rewrite the service's binary path and run code as its account.",
+                vec![format!("service: {svc} (SERVICE_CHANGE_CONFIG granted)")],
+                "Remove write/change-config rights from non-admin principals on this service.",
+            );
+        } else if can_write_regkey(&format!(r"MACHINE\{base}")) {
             rep.push(
                 "SVC-004",
                 "services",

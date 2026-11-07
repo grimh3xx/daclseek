@@ -26,13 +26,13 @@ downloads or exfiltrates anything.
 | Check | What it reports |
 |---|---|
 | **Token privileges** (`PRIV`) | Dangerous privileges held by the current token — `SeImpersonate`, `SeDebug`, `SeBackup`, `SeRestore`, `SeTakeOwnership`, `SeLoadDriver`, `SeTcb`, … — with the risk each one carries. A privilege the token *holds* is reported even when currently disabled. |
-| **Services** (`SVC`) | Writable service registry keys (rewrite `ImagePath`), unquoted service paths with a writable segment, writable service binaries, and writable service directories (DLL side-loading / binary replacement). |
+| **Services** (`SVC`) | Reconfigurable services (`SERVICE_CHANGE_CONFIG` via the SCM DACL) and writable service registry keys — both let the binary path be rewritten — plus unquoted paths with a writable segment, writable service binaries, and writable service directories. |
 | **Scheduled tasks** (`TASK`) | Tasks whose action binary — or its directory — is writable by the current user, read straight from the on-disk task XML. |
 | **AlwaysInstallElevated** (`AIE`) | The installer policy that applies MSI packages with elevated rights for standard users. |
-| **Autoruns** (`RUN`) | `Run` / `RunOnce` entries whose target binary or directory is writable by the current user. |
+| **Autoruns** (`RUN`) | `Run`/`RunOnce` entries, Winlogon `Shell`/`Userinit` hooks, `AppInit_DLLs`, Image File Execution Options debuggers, and writable Startup folders — flagged on a writable target or on presence of a hijack hook. |
 | **PATH** (`PATH`) | User-writable directories on the system `PATH` — a name-based resolution exposure. |
 | **UAC** (`UAC`) | Weak UAC configuration: disabled, silent admin elevation, or no secure desktop. |
-| **Credentials** (`CRED`) | Credential-exposure surfaces: registry autologon password, leftover unattend/sysprep answer files, and security-hive backups. |
+| **Credentials** (`CRED`) | Credential-exposure surfaces: registry autologon password, unattend/sysprep answer files, security-hive backups, PuTTY/WinSCP/VNC stored passwords, OpenSSH private keys, PowerShell history, cloud-SDK credential files, and Group Policy Preferences `cpassword`. |
 
 Findings are ranked worst-first, tagged `INFO` / `LOW` / `MEDIUM` / `HIGH` / `CRITICAL`, and
 each carries the concrete evidence plus a remediation step.
@@ -72,12 +72,20 @@ a direct win over Watson.
 mycroft [OPTIONS]
 
 OPTIONS:
-    --json            Emit findings as JSON (for pipelines / triage)
-    --no-color        Disable ANSI colours
-    --only <check>    Run one check: privileges, services, tasks, installer,
-                      autoruns, path, uac, credentials
+    --json              Emit findings as JSON (for pipelines / triage)
+    --no-color          Disable ANSI colours
+    --only <check>      Run one check: privileges, services, tasks, installer,
+                        autoruns, path, uac, credentials
+    --min-severity <s>  Hide findings below <s> (info|low|medium|high|critical)
     -h, --help
     -V, --version
+```
+
+The process exit code reflects the worst **shown** finding — `0` none/info, `1` low,
+`2` medium, `3` high, `4` critical — so it drops straight into a CI gate:
+
+```bash
+mycroft --min-severity high   # exits non-zero only on a high/critical finding
 ```
 
 Run it as the user whose context you want to assess — most findings are privilege-relative; a

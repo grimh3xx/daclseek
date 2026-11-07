@@ -12,6 +12,29 @@ pub enum Severity {
 }
 
 impl Severity {
+    /// Parse a CLI threshold like `high` or `med`.
+    pub fn parse(s: &str) -> Option<Severity> {
+        match s.to_ascii_lowercase().as_str() {
+            "info" => Some(Severity::Info),
+            "low" => Some(Severity::Low),
+            "medium" | "med" => Some(Severity::Medium),
+            "high" => Some(Severity::High),
+            "critical" | "crit" => Some(Severity::Critical),
+            _ => None,
+        }
+    }
+
+    /// Process exit code for the worst finding (0 = nothing actionable).
+    pub fn exit_code(self) -> i32 {
+        match self {
+            Severity::Info => 0,
+            Severity::Low => 1,
+            Severity::Medium => 2,
+            Severity::High => 3,
+            Severity::Critical => 4,
+        }
+    }
+
     fn label(self) -> &'static str {
         match self {
             Severity::Critical => "CRIT",
@@ -56,13 +79,27 @@ pub struct Context {
 
 pub struct Reporter {
     findings: Vec<Finding>,
+    min: Severity,
 }
 
 impl Reporter {
     pub fn new() -> Self {
         Reporter {
             findings: Vec::new(),
+            min: Severity::Info,
         }
+    }
+
+    /// Hide findings below this severity from output and exit code.
+    pub fn set_min(&mut self, min: Severity) {
+        self.min = min;
+    }
+
+    /// Exit code derived from the worst *shown* finding.
+    pub fn exit_code(&self) -> i32 {
+        self.sorted()
+            .first()
+            .map_or(0, |f| f.severity.exit_code())
     }
 
     /// Record a finding. `evidence` lines carry the concrete proof.
@@ -89,7 +126,11 @@ impl Reporter {
     }
 
     fn sorted(&self) -> Vec<&Finding> {
-        let mut v: Vec<&Finding> = self.findings.iter().collect();
+        let mut v: Vec<&Finding> = self
+            .findings
+            .iter()
+            .filter(|f| f.severity >= self.min)
+            .collect();
         // Severity descending, then category for stable grouping.
         v.sort_by(|a, b| {
             b.severity
@@ -155,7 +196,7 @@ impl Reporter {
     fn print_summary(&self, color: bool) {
         use Severity::*;
         let mut counts = [0usize; 5];
-        for f in &self.findings {
+        for f in self.findings.iter().filter(|f| f.severity >= self.min) {
             let idx = match f.severity {
                 Critical => 0,
                 High => 1,

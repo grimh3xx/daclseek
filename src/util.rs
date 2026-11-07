@@ -33,6 +33,11 @@ const KEY_WRITE: u32 = 0x2_0006;
 const KEY_ALL_ACCESS: u32 = 0xF_003F;
 const SE_FILE_OBJECT: i32 = 1;
 const SE_REGISTRY_KEY: i32 = 4;
+const SE_SERVICE: i32 = 5;
+
+// Service access rights.
+const SERVICE_CHANGE_CONFIG: u32 = 0x0002;
+const SERVICE_ALL_ACCESS: u32 = 0xF_01FF;
 const SECURITY_IMPERSONATION: i32 = 2;
 const TOKEN_QUERY: u32 = 0x0008;
 const TOKEN_DUPLICATE: u32 = 0x0002;
@@ -373,6 +378,24 @@ pub fn can_write_regkey(name: &str) -> bool {
     };
     let desired = KEY_WRITE | DELETE | WRITE_DAC | WRITE_OWNER;
     effective_access(name, SE_REGISTRY_KEY, mapping, desired)
+}
+
+/// Can the current token reconfigure the service (`SERVICE_CHANGE_CONFIG`)?
+/// This is the precise SCM-level check — the ability to rewrite the service's
+/// binary path and run arbitrary code as its account. `name` is the service
+/// key name. Queried via `GetNamedSecurityInfoW(SE_SERVICE)`, so no SCM handle
+/// needs to be opened.
+pub fn can_change_service_config(name: &str) -> bool {
+    // Specific rights are evaluated directly; the mapping only matters if a
+    // GENERIC_* bit is requested, which it is not here.
+    let mapping = GENERIC_MAPPING {
+        GenericRead: 0x2_008D,
+        GenericWrite: 0x2_0002,
+        GenericExecute: 0x2_0170,
+        GenericAll: SERVICE_ALL_ACCESS,
+    };
+    let desired = SERVICE_CHANGE_CONFIG | WRITE_DAC | WRITE_OWNER;
+    effective_access(name, SE_SERVICE, mapping, desired)
 }
 
 /// The current process token privileges, as `(name, enabled)`.

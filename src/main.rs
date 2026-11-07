@@ -12,7 +12,7 @@ mod checks;
 mod report;
 mod util;
 
-use report::Reporter;
+use report::{Reporter, Severity};
 
 const CHECKS: &[&str] = &[
     "privileges",
@@ -36,8 +36,10 @@ fn print_help() {
     println!("    --json            Emit findings as JSON");
     println!("    --no-color        Disable ANSI colours");
     println!("    --only <check>    Run a single check");
+    println!("    --min-severity <s>  Hide findings below <s> (info|low|medium|high|critical)");
     println!("    -h, --help        Show this help");
     println!("    -V, --version     Show version\n");
+    println!("EXIT CODE: worst shown finding — 0 none/info, 1 low, 2 medium, 3 high, 4 critical\n");
     println!("CHECKS:");
     println!("    {}", CHECKS.join(", "));
 }
@@ -47,6 +49,7 @@ fn main() {
     let mut json = false;
     let mut no_color = false;
     let mut only: Option<String> = None;
+    let mut min = Severity::Info;
 
     let mut i = 1;
     while i < args.len() {
@@ -59,6 +62,18 @@ fn main() {
                     Some(v) => only = Some(v.clone()),
                     None => {
                         eprintln!("error: --only requires a check name");
+                        std::process::exit(2);
+                    }
+                }
+            }
+            "--min-severity" => {
+                i += 1;
+                match args.get(i).and_then(|v| Severity::parse(v)) {
+                    Some(s) => min = s,
+                    None => {
+                        eprintln!(
+                            "error: --min-severity requires info|low|medium|high|critical"
+                        );
                         std::process::exit(2);
                     }
                 }
@@ -89,6 +104,7 @@ fn main() {
 
     let ctx = checks::sysinfo::context();
     let mut rep = Reporter::new();
+    rep.set_min(min);
     let enabled = |name: &str| only.as_deref().is_none_or(|o| o == name);
 
     if enabled("privileges") {
@@ -121,4 +137,6 @@ fn main() {
     } else {
         rep.print_console(&ctx, !no_color);
     }
+
+    std::process::exit(rep.exit_code());
 }
