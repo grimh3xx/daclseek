@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the animated terminal demo for mycroft into docs/demo.svg.
+"""Render the animated terminal demo for daclseek into docs/demo.svg.
 
 Same "filmstrip" model as the pe-binaries / SecureArchSetup demos: every frame
 is a full snapshot of the screen, stacked vertically, and a CSS keyframe
@@ -51,7 +51,7 @@ def seg(t, color="text", bold=False):
 
 def prompt():
     return [seg("grimh3xx@centraltech", "user"), seg(":", "punct"),
-            seg("~/mycroft", "path"), seg("$ ", "punct")]
+            seg("~/daclseek", "path"), seg("$ ", "punct")]
 
 
 class Session:
@@ -116,9 +116,9 @@ def fix(text):
 
 def build():
     s = Session()
-    s.type("./mycroft.exe")
+    s.type("./daclseek.exe")
     s.enter()
-    s.out([seg("mycroft", "cyan", True), seg(" — windows privesc enumeration", "muted")], dur=OUT)
+    s.out([seg("daclseek", "cyan", True), seg(" — windows privesc enumeration", "muted")], dur=OUT)
     s.out([rule()], dur=1)
     s.out([seg("  Host     : "), seg("Windows 11 Pro (build 22631.4317)", "white")])
     s.out([seg("  Version  : "), seg("23H2 (AMD64)", "text")])
@@ -221,7 +221,7 @@ def render(static_frame=None):
 
     svg = (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" '
-        f'viewBox="0 0 {W} {H}" role="img" aria-label="mycroft privesc scan demo">'
+        f'viewBox="0 0 {W} {H}" role="img" aria-label="daclseek privesc scan demo">'
         f'<style>{css}</style>'
         f'<defs>{rows}</defs>'
         f'<rect x="0.5" y="0.5" width="{W-1}" height="{H-1}" rx="12" fill="#111826" stroke="#1E2A3D"/>'
@@ -230,7 +230,7 @@ def render(static_frame=None):
         '<circle cx="44" cy="20" r="6" fill="#FEBC2E"/>'
         '<circle cx="64" cy="20" r="6" fill="#28C840"/>'
         f'<text x="{W/2:.0f}" y="25" text-anchor="middle" fill="#8B98AD" '
-        f'font-family="{MONO}" font-size="13">mycroft — privesc audit</text>'
+        f'font-family="{MONO}" font-size="13">daclseek — privesc audit</text>'
         f'<svg x="18" y="58" width="{VIEW_W}" height="{VIEW_H}" '
         f'viewBox="0 0 {VIEW_W} {VIEW_H}" overflow="hidden">'
         f'{strip_open}font-family="{MONO}" font-size="{FS}" xml:space="preserve">'

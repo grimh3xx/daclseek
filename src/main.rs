@@ -1,4 +1,4 @@
-//! mycroft — local Windows privilege-escalation misconfiguration enumerator.
+//! daclseek — local Windows privilege-escalation misconfiguration enumerator.
 //!
 //! Read-only security assessment tool: it inspects the host for common local
 //! privilege-escalation *misconfigurations* (writable service binaries,
@@ -27,11 +27,11 @@ const CHECKS: &[&str] = &[
 
 fn print_help() {
     println!(
-        "mycroft {} — windows privesc misconfiguration enumerator (read-only)\n",
+        "daclseek {} — windows privesc misconfiguration enumerator (read-only)\n",
         env!("CARGO_PKG_VERSION")
     );
     println!("USAGE:");
-    println!("    mycroft [OPTIONS]\n");
+    println!("    daclseek [OPTIONS]\n");
     println!("OPTIONS:");
     println!("    --json            Emit findings as JSON");
     println!("    --no-color        Disable ANSI colours");
@@ -83,7 +83,7 @@ fn main() {
                 return;
             }
             "-V" | "--version" => {
-                println!("mycroft {}", env!("CARGO_PKG_VERSION"));
+                println!("daclseek {}", env!("CARGO_PKG_VERSION"));
                 return;
             }
             other => {

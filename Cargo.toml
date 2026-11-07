@@ -1,5 +1,5 @@
 [package]
-name = "mycroft"
+name = "daclseek"
 version = "0.1.0"
 edition = "2021"
 description = "Local Windows privilege-escalation misconfiguration enumerator (read-only)"

@@ -1,7 +1,7 @@
-<img src="docs/banner.svg" alt="mycroft" width="100%">
+<img src="docs/banner.svg" alt="daclseek" width="100%">
 
-[![build](https://img.shields.io/github/actions/workflow/status/grimh3xx/mycroft/build.yml?branch=master&style=flat-square&labelColor=111826&label=build)](https://github.com/grimh3xx/mycroft/actions)
-[![license](https://img.shields.io/github/license/grimh3xx/mycroft?style=flat-square&labelColor=111826&color=22D3EE)](LICENSE)
+[![build](https://img.shields.io/github/actions/workflow/status/grimh3xx/daclseek/build.yml?branch=master&style=flat-square&labelColor=111826&label=build)](https://github.com/grimh3xx/daclseek/actions)
+[![license](https://img.shields.io/github/license/grimh3xx/daclseek?style=flat-square&labelColor=111826&color=22D3EE)](LICENSE)
 ![Rust](https://img.shields.io/badge/Rust-2021-3B82F6?style=flat-square&labelColor=111826)
 ![platform](https://img.shields.io/badge/Windows-x64-22D3EE?style=flat-square&labelColor=111826)
 ![read-only](https://img.shields.io/badge/read--only-no%20exploitation-34D399?style=flat-square&labelColor=111826)
@@ -11,12 +11,12 @@ spiritual successor to the archived PowerShell [Sherlock](https://github.com/ras
 and C# [Watson](https://github.com/rasta-mouse/Watson) — but it takes the opposite approach.
 Those shipped a hand-maintained **CVE → fixing-KB** table and checked the patch level, so they
 rotted the moment their authors stopped updating them (both archived in 2021, blind on modern
-builds). mycroft instead enumerates **misconfigurations that are exploitable regardless of
+builds). daclseek instead enumerates **misconfigurations that are exploitable regardless of
 patch level** — the class of findings that never goes stale. Strictly **read-only**: it
 inspects the host and reports, with remediation guidance. It never exploits, modifies,
 downloads or exfiltrates anything.
 
-<p align="center"><img src="docs/demo.svg" alt="mycroft privesc scan demo" width="100%"></p>
+<p align="center"><img src="docs/demo.svg" alt="daclseek privesc scan demo" width="100%"></p>
 
 > ⚠️ For **authorised** security assessments, hardening reviews and defensive baselining only.
 > Run it solely on systems you own or are explicitly permitted to test.
@@ -39,7 +39,7 @@ each carries the concrete evidence plus a remediation step.
 
 ## How the write-access checks work
 
-The "is X writable by me?" checks are **not heuristics**. For each target, mycroft:
+The "is X writable by me?" checks are **not heuristics**. For each target, daclseek:
 
 1. reads the object's security descriptor (`GetNamedSecurityInfoW`),
 2. duplicates the current process token to an impersonation token,
@@ -69,7 +69,7 @@ a direct win over Watson.
 ## Usage
 
 ```
-mycroft [OPTIONS]
+daclseek [OPTIONS]
 
 OPTIONS:
     --json              Emit findings as JSON (for pipelines / triage)
@@ -85,16 +85,16 @@ The process exit code reflects the worst **shown** finding — `0` none/info, `1
 `2` medium, `3` high, `4` critical — so it drops straight into a CI gate:
 
 ```bash
-mycroft --min-severity high   # exits non-zero only on a high/critical finding
+daclseek --min-severity high   # exits non-zero only on a high/critical finding
 ```
 
 Run it as the user whose context you want to assess — most findings are privilege-relative; a
 path writable by a low-privileged user is the interesting case.
 
 ```bash
-mycroft                  # full console report
-mycroft --json           # machine-readable
-mycroft --only services  # just the service checks
+daclseek                  # full console report
+daclseek --json           # machine-readable
+daclseek --only services  # just the service checks
 ```
 
 ## Design

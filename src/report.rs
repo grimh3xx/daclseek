@@ -147,7 +147,7 @@ impl Reporter {
             ("", "", "")
         };
 
-        println!("{bold}mycroft{reset} {dim}— windows privesc enumeration{reset}");
+        println!("{bold}daclseek{reset} {dim}— windows privesc enumeration{reset}");
         println!("{dim}────────────────────────────────────────────────────────{reset}");
         println!("  Host     : {} (build {})", ctx.os_name, ctx.build);
         if !ctx.display_version.is_empty() {
@@ -216,7 +216,7 @@ impl Reporter {
 
     pub fn print_json(&self, ctx: &Context) {
         let out = serde_json::json!({
-            "tool": "mycroft",
+            "tool": "daclseek",
             "version": env!("CARGO_PKG_VERSION"),
             "context": ctx,
             "findings": self.sorted(),
